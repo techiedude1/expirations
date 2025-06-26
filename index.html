@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Drug Expiry Tracker (Cloud)</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f8fafc;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 8px;
+    }
+    .container {
+      display: flex;
+      gap: 32px;
+      width: 100%;
+      max-width: 1100px;
+    }
+    .form-box, .list-box {
+      background: #fff;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 2px 16px #0001;
+      min-width: 320px;
+      width: 100%;
+      max-width: 440px;
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 1.25em;
+      color: #2563eb;
+    }
+    label {
+      display: block;
+      margin-bottom: 10px;
+    }
+    input {
+      width: 100%;
+      margin-top: 4px;
+      margin-bottom: 12px;
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      font-size: 1em;
+    }
+    button {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 24px;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+      font-size: 1em;
+      margin-top: 4px;
+      transition: background .2s;
+    }
+    button:hover {
+      background: #1e40af;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: .97em;
+    }
+    th, td {
+      padding: 8px 4px;
+      text-align: left;
+    }
+    thead th {
+      background: #f1f5f9;
+      font-weight: 600;
+    }
+    tr:nth-child(even) { background: #f9fafb;}
+    .loading {
+      color: #888;
+      font-style: italic;
+    }
+    .delete-btn {
+      color: #fff;
+      background: #ef4444;
+      border: none;
+      border-radius: 5px;
+      padding: 3px 10px;
+      cursor: pointer;
+      font-size: .95em;
+    }
+    .delete-btn:hover { background: #b91c1c;}
+    @media (max-width: 800px) {
+      .container { flex-direction: column; align-items: stretch; gap: 16px;}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="form-box">
+      <h2>Add Drug</h2>
+      <label>
+        Brand Name
+        <input id="brand" placeholder="e.g. Tylenol"/>
+      </label>
+      <label>
+        Generic Name
+        <input id="generic" placeholder="e.g. Acetaminophen"/>
+      </label>
+      <label>
+        Strength
+        <input id="strength" placeholder="e.g. 500mg"/>
+      </label>
+      <label>
+        Quantity
+        <input id="quantity" type="number" min="1" placeholder="e.g. 30"/>
+      </label>
+      <label>
+        Expiration Date
+        <input id="expiry" type="date"/>
+      </label>
+      <button id="addBtn" onclick="addDrug()">Add Drug</button>
+      <div id="addMsg" class="loading"></div>
+    </div>
+    <div class="list-box">
+      <h2>Drug List</h2>
+      <div id="drugList" class="loading">Loading...</div>
+      <button onclick="fetchAndRender()" style="margin-top:12px; background:#e0e7ef; color:#222; border:1px solid #e5e7eb;">Refresh List</button>
+    </div>
+  </div>
+  <script>
+    // REPLACE with your SheetDB endpoint!
+    const SHEETDB_API = "https://sheetdb.io/api/v1/uayw5qkoreg1s";
+    // Example: const SHEETDB_API = "https://sheetdb.io/api/v1/abcd1234"; 
+
+    function formatDate(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      return d.toLocaleDateString();
+    }
+
+    function setLoading(msg = "Loading...") {
+      document.getElementById('drugList').innerHTML = `<div class="loading">${msg}</div>`;
+    }
+
+    function fetchAndRender() {
+      setLoading();
+      fetch(SHEETDB_API)
+        .then(res => res.json())
+        .then(rows => {
+          // Sort by expiry date, soonest first
+          rows.sort((a, b) => new Date(a.Expiry) - new Date(b.Expiry));
+          if (!rows.length) {
+            document.getElementById('drugList').innerHTML = '<p style="color:#888;">No drugs added yet.</p>';
+            return;
+          }
+          let html = `<table>
+            <thead>
+              <tr>
+                <th>Brand</th>
+                <th>Generic</th>
+                <th>Strength</th>
+                <th>Qty</th>
+                <th>Expires</th>
+              </tr>
+            </thead>
+            <tbody>`;
+          rows.forEach((d, i) => {
+            html += `<tr>
+              <td>${d.Brand || ""}</td>
+              <td>${d.Generic || ""}</td>
+              <td>${d.Strength || ""}</td>
+              <td>${d.Quantity || ""}</td>
+              <td>${formatDate(d.Expiry)}</td>
+            </tr>`;
+          });
+          html += `</tbody></table>`;
+          document.getElementById('drugList').innerHTML = html;
+        })
+        .catch(err => {
+          setLoading("Unable to load data.");
+        });
+    }
+
+    function addDrug() {
+      const brand = document.getElementById('brand').value.trim();
+      const generic = document.getElementById('generic').value.trim();
+      const strength = document.getElementById('strength').value.trim();
+      const quantity = document.getElementById('quantity').value.trim();
+      const expiry = document.getElementById('expiry').value;
+
+      if ((!brand && !generic) || !strength || !quantity || !expiry) {
+        alert("Please fill all fields (brand or generic, strength, quantity, expiry).");
+        return;
+      }
+      document.getElementById('addBtn').disabled = true;
+      document.getElementById('addMsg').textContent = "Saving...";
+
+      fetch(SHEETDB_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: [
+            {
+              Brand: brand,
+              Generic: generic,
+              Strength: strength,
+              Quantity: quantity,
+              Expiry: expiry
+            }
+          ]
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('addMsg').textContent = "Added!";
+        document.getElementById('brand').value = '';
+        document.getElementById('generic').value = '';
+        document.getElementById('strength').value = '';
+        document.getElementById('quantity').value = '';
+        document.getElementById('expiry').value = '';
+        setTimeout(() => { document.getElementById('addMsg').textContent = ""; }, 900);
+        fetchAndRender();
+      })
+      .catch(() => {
+        document.getElementById('addMsg').textContent = "Error saving data!";
+      })
+      .finally(() => {
+        document.getElementById('addBtn').disabled = false;
+      });
+    }
+
+    // Initial fetch
+    fetchAndRender();
+  </script>
+</body>
+</html>
