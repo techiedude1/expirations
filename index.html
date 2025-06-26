@@ -1,9 +1,9 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Drug Expiry Tracker (Cloud)</title>
+  <title>Drug Expiry Tracker (Cloud, ALL CAPS)</title>
   <style>
     body {
       font-family: system-ui, sans-serif;
@@ -38,6 +38,9 @@
     label {
       display: block;
       margin-bottom: 10px;
+    }
+    input[type="text"], input:not([type]) {
+      text-transform: uppercase;
     }
     input {
       width: 100%;
@@ -104,15 +107,15 @@
       <h2>Add Drug</h2>
       <label>
         Brand Name
-        <input id="brand" placeholder="e.g. Tylenol"/>
+        <input id="brand" type="text" placeholder="e.g. TYLENOL"/>
       </label>
       <label>
         Generic Name
-        <input id="generic" placeholder="e.g. Acetaminophen"/>
+        <input id="generic" type="text" placeholder="e.g. ACETAMINOPHEN"/>
       </label>
       <label>
         Strength
-        <input id="strength" placeholder="e.g. 500mg"/>
+        <input id="strength" type="text" placeholder="e.g. 500MG"/>
       </label>
       <label>
         Quantity
@@ -186,9 +189,10 @@
     }
 
     function addDrug() {
-      const brand = document.getElementById('brand').value.trim();
-      const generic = document.getElementById('generic').value.trim();
-      const strength = document.getElementById('strength').value.trim();
+      // Make all text inputs uppercase for storing
+      const brand = document.getElementById('brand').value.trim().toUpperCase();
+      const generic = document.getElementById('generic').value.trim().toUpperCase();
+      const strength = document.getElementById('strength').value.trim().toUpperCase();
       const quantity = document.getElementById('quantity').value.trim();
       const expiry = document.getElementById('expiry').value;
 
